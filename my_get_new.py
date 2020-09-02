@@ -6,8 +6,6 @@ import numpy as np
 import pandas as pd
 from scipy import signal
 from scipy.interpolate import CubicSpline
-# from lmfit import Model
-# from lmfit.models import update_param_vals
 import statistics 
 
 import numpy as np
@@ -81,13 +79,11 @@ x, y = 3460, 8600
 step_ = 40
 remove_first, remove_last  = 520, -10
 dpi_ = 200
-
 L = 100
 R = 100
 
 telluric_1 = 7698.31
 telluric_2 = 7699.5
-
 
 relative_c70 = [6266.0, 6248.5, 6222.5, 6220.0, 6114.0]
 markers_c70 = [6285.0, 6200.0, 6185.0, 6175.0, 6129.0, 6129.0, 6124.0, 6091.0, 6074.0, 6041.0, 6037.0, 6030.0, 6266.0, 6248.5, 6222.5, 6220.0, 6114.0]
@@ -99,7 +95,6 @@ markers_c70p = [7857.6, 7777.2, 7766.4, 7821.3, 7750, 7728.1, 7713.3, 7685.8, 79
 max60 = max(markers_c60)
 max70 = max(markers_c70)
 max70p = max(markers_c70p)
-
 min60 = min(markers_c60)
 min70 = min(markers_c70)
 min70p = min(markers_c70p)
@@ -115,7 +110,6 @@ wwave = []
 bbary = []
 fflux = []
 nname = []
-
 k_bary = []
 k_geo = []
 k_flux = []
@@ -125,7 +119,6 @@ k_interstellar_f = []
 interstellar_name = []
 aa_peaks = []
 ff_peaks = []
-
 
 c60_wave = []
 c70_wave= []
@@ -238,7 +231,6 @@ class EdiblesSpectrum:
             return df_subset
 
         return self.df
-
 
 def eliminate(s, bad_characters):
     for item in bad_characters:
@@ -547,7 +539,6 @@ def single_butter(wave, flux, name, setting, red, mean, std):
     return fgust
 
 if __name__ == "__main__":
-
     clear()
     for star in range(len(stars)):
         swwave = []
@@ -563,126 +554,98 @@ if __name__ == "__main__":
                 os.mkdir("npy/{}/K/".format(stars[star]))
                 os.mkdir("npy/{}/flux/".format(stars[star]))
                 os.mkdir("npy/{}/geo/".format(stars[star]))
-
             except:
                 pass
-            for r in range(len(red_)):                
+            for r in range(len(red_)):        
+                "UPDATE DIRECTORY HERE"     
                 # path = "/home/idouzoglou/anaconda3/lib/python3.7/site-packages/edibles/edibles/data/DR4_fits/{}/RED_{}/".format(stars[star], setting[u])
                 # listfile = glob.glob("/home/idouzoglou/anaconda3/lib/python3.7/site-packages/edibles/edibles/data/DR4_fits/{}/RED_{}/{}_w{}_{}_*.fits".format(stars[star], setting[u], stars[star], setting[u], red_[r]))
                 path = "/Users/uchi/Fullerene_code/DR4_all/{}/RED_{}/*".format(stars[star], setting[u])
                 listfile = glob.glob("/Users/uchi/Fullerene_code/DR4_all/{}/RED_{}/{}_w{}_{}_*.fits".format(stars[star], setting[u], stars[star], setting[u], red_[r]))
 
                 for f in range(0, len(listfile)):
-                    file = listfile[f]
-                    new = eliminate(file, path)
+                    file = listfile[f] # checks items in list
+                    new = eliminate(file, path) # elimiates path
                     name = new[:-4]
                     if name[-1] == ".":
                         name = name[:-1]
-                    print(name)
-                    sp = EdiblesSpectrum(file)
+                    sp = EdiblesSpectrum(file) # get edible specturm
                     subset = sp.getSpectrum(xmin=x, xmax=y)
                     velocity = sp.v_bary
                     del sp
 
                     if subset.empty:
-                        del subset
+                        del subset # if empty, pass
                         pass
                     else:
-                        flux = subset["flux"].to_numpy()
-                        flux_ = flux[remove_first:remove_last]
-                        meann = np.mean(flux_)
+                        flux = subset["flux"].to_numpy() # convert to numpy
+                        flux_ = flux[remove_first:remove_last] # remove first and las n that are erroneous
+                        meann = np.mean(flux_) # take the mean
                         if meann == 0.0:
                             pass
                         else:
                             wave = subset["wave"].to_numpy()
                             bary = subset["bary_wave"].to_numpy()
-                            bary_ = bary[remove_first: remove_last]
-                            wave_ = wave[remove_first:remove_last]
-                            flux_m = flux_ / meann 
-                            stdd = np.std(flux_m)
+                            bary_ = bary[remove_first: remove_last] # remove first and las n that are erroneous
+                            wave_ = wave[remove_first:remove_last] # remove first and las n that are erroneous
+                            flux_m = flux_ / meann # mean center
+                            stdd = np.std(flux_m) # check std
                             mean_mean = np.mean(flux_m)
-                            if stdd > 1.0: # erroneous data
+                            if stdd > 1.0: # erroneous 
                                 pass
-                            b_right = max(bary_)
-                            b_left = min(bary_)
+                            
+                            b_right = max(bary_) 
+                            b_left = min(bary_) 
                             w_left = max(wave_)
                             w_right = min(wave_)
 
-                            "K Peaks"
-                            shift , wave_k, flux_k, label, AP_, FP_ , interstellar_velocity = K_peaks(wave_, bary_, flux_m, b_left, b_right, velocity, 7698.9645) # second peak
-
-
-                            "C60 stack"
+                            "FIND POTTASIUM PEAKS"
+                            shift , wave_k, flux_k, label, AP_, FP_ , interstellar_velocity = K_peaks(wave_, bary_, flux_m, b_left, b_right, velocity, 7698.9645) 
+                            "ASSIGN MOLECULAR RANGE"
                             if b_left > below_60 and b_left < above_60 or b_right > below_60 and b_right < above_60:
                                 molecule = "C60"
-
-                            "C70 stack"
                             if b_left > below_70 and b_left < above_70 or b_right > below_70 and b_right < above_70:
                                 molecule = "C70"
-
-                            "C70+ stack"
                             if b_left > below_70p and b_left < above_70p or b_right > below_70p and b_right < above_70p:
                                 molecule = "C70p"
 
+                            "SAVE INTERSTELLAR VELOCITIES"
                             if label == "1peak_interstellar":
                                 with open("interstellar.txt", "a") as int_file:
                                     int_file.write("{}\t{}\t{}\n".format(stars[star], name, interstellar_velocity))
-
-                                # interstellar_ = bary_to_interstellar(bary_, interstellar_velocity)
-                                # butter = single_butter(interstellar_, flux_m, name, setting[u], red_[r], meann, stdd)
-                                # np.save("interstellar/{}_{}_{}_inter.npy".format(int(b_left), int(b_right), name), bary_)
-                                # np.save("butter/{}_{}_{}_buter.npy".format(int(b_left), int(b_right), name), butter)
-
+                            "IF NOT NONISE SAVE"
                             if label != "noise":
                                 np.save("npy/{}/bary/{}_{}_{}.npy".format(stars[star], int(b_left), int(b_right), name), bary_)
                                 np.save("npy/{}/geo/{}_{}_{}.npy".format(stars[star], int(w_left), int(w_right), name), wave_)
                                 np.save("npy/{}/flux/{}_{}_{}.npy".format(stars[star], int(b_left), int(b_right), name), flux_m)
-                            
                                 if SINGLE == True:
                                     single_butter(wave_, flux_m, name, setting[u], red_[r], meann, stdd)
                                     single_plot(wave_, flux_m, name, setting[u], red_[r], meann, stdd)
-
+                                "SAVE TXT INFORMATION"
                                 with open("text_DB.txt", "a") as txt_file:
                                     txt_file.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(stars[star], name, int(b_left), int(b_right), setting[u], red_[r],  meann, stdd, shift, label, interstellar_velocity, molecule, AP_, FP_))
-
-
-                                # plt.plot(subset["bary_wave"], subset["flux"], label="Barycentric Subset")
-                                # plt.legend()
-                                # plt.show()
 
                                 # wwave.append(wave_)
                                 # bbary.append(bary_)
                                 # fflux.append(flux_m)
                                 # nname.append(name)
-
                                 # swwave.append(wave_)
                                 # sbbary.append(bary_)
                                 # sfflux.append(flux_m)
                                 # snname.append(name)
 
-
-
-        # mean_shift = statistics.mean(sshifts)
-        # if mean_shift > 0.0:
-        #     for sh in range(len(sbbary)):
-        #         sbbary[sh] = sbbary[sh] + mean_shift
-
         # star_plot(sbbary, sfflux, snname, sshifts, "C60")
         # star_plot(sbbary, sfflux, snname, sshifts, "C70")
         # star_plot(sbbary, sfflux, snname, sshifts, "C70p")
-
-
-    # c60 c70 c70 plus plots of the specific range
-    # interpolate, mening put wave and flux i order
-    # gaussian
 
     # molecule_plot(c60_bary, c60_flux, c60_name, "C60")
     # molecule_plot(c70_bary, c70_flux, c70_name, "C70")
     # molecule_plot(c70p_bary, c70p_flux, c70p_name, "C70p")
 
+
+    "BARYCENTRIC K"
     plt.figure(figsize=(8,8))
     for k in range(len(k_bary)):
-        # plt.grid(True)
         plt.axvline(7698.9645, color="black")
         plt.axvline(telluric_1 , color="black", linestyle = "dashed", linewidth = 0.5)
         plt.axvline(telluric_2, color="black", linestyle = "dashed", linewidth = 0.5)
@@ -691,14 +654,12 @@ if __name__ == "__main__":
         plt.xlabel('Wavelength $\AA$')
         plt.ylabel('Normalized Flux') 
         plt.title("Barycentric K")
-        # plt.xticks(np.arange(min(k_bary[k]), max(k_bary[k]), step=0.1))
         plt.savefig("K_barycentric.png", dpi = dpi_)
     plt.close()
 
-
+    "GEOCENTRIC K"
     plt.figure(figsize=(8,8))
     for k in range(len(k_geo)):
-        # plt.grid(True)
         plt.axvline(7698.9645, color="black")
         plt.axvline(telluric_1 , color="black", linestyle = "dashed", linewidth = 0.5)
         plt.axvline(telluric_2, color="black", linestyle = "dashed", linewidth = 0.5)
@@ -707,17 +668,13 @@ if __name__ == "__main__":
         plt.xlabel('Wavelength $\AA$')
         plt.ylabel('Normalized Flux') 
         plt.title("Geocentric K")
-        # plt.xticks(np.arange(min(k_bary[k]), max(k_bary[k]), step=0.1))
         plt.savefig("K_geocentric.png", dpi = dpi_)
     plt.close()
 
-
+    "ITERSTELLAR K"
     plt.figure(figsize=(8,8))
     for p in range(len(k_interstellar_w)):
-        # plt.grid(True)
         plt.axvline(7698.9645, color="black")
-        # plt.axvline(telluric_1 , color="black", linestyle = "dashed", linewidth = 0.5)
-        # plt.axvline(telluric_2, color="black", linestyle = "dashed", linewidth = 0.5)
         plt.plot(k_interstellar_w[p], k_interstellar_f[p], label = interstellar_name[p], linewidth = 0.5)
         plt.xlim(7698.9645 -2, 7698.9645 +2)
         for pp in aa_peaks:
@@ -726,6 +683,5 @@ if __name__ == "__main__":
         plt.ylabel('Normalized Flux') 
         plt.title("Interstellar K")
         plt.legend
-        # plt.xticks(np.arange(min(k_bary[k]), max(k_bary[k]), step=0.1))
         plt.savefig("K_interstellar.png", dpi = dpi_)
     plt.close()
